@@ -1,0 +1,54 @@
+setwd("F:/term_06_phd/2TH_PAPER/figend")
+smdata<-read.csv("R.csv")
+library(dygraphs)
+
+library(dplyr)
+library(xts)
+library(ggplot2)
+require(gridExtra)
+SMADI<-smdata$SMADIN_M
+
+
+
+tarikh<-smdata$ï..DATE
+tarikh<-as.Date(tarikh,format="%m/%d/%Y")
+
+resi<-smdata$SMADIN_M-smdata$SMADI_M    
+resi2<-smdata$SMADIN_K-smdata$SMADI_K  
+
+
+data <- data.frame(
+  day1 = as.Date("2018-01-08") + 1:1819,
+ 
+  SMADI = SMADI
+  
+)
+ 
+
+# ----------------
+P1<- ggplot(data)+ 
+ geom_point(shape = 17,lwd=2 ,size=0.8,
+            aes(x=day1,y = SMADI, color = SMADI))  + 
+scale_color_gradient(low="green",high = "red")+
+scale_x_date(date_labels = "%y-%b",date_breaks = "1 month")+
+  labs(
+    #title = "(a)",
+    #subtitle = "(2016-2017)",
+    #caption = "?????????? ???? ?????????? ??????  ???? ????????",
+    #tag = "3-A",
+    x = "( زمان  ( روز",
+    y = " SMADIN (-) ",
+    #colour = "Legend"
+  )+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)
+        ,plot.title = element_text(hjust = 0.5),
+        axis.title.y = element_text(color = "black", size=10),
+        
+        axis.title.x = element_text(color = "black", size=10))
+
+
+
+
+tiff('Fig9-f.tiff', width=4000, height=2000, res=400)
+grid.arrange(P1,ncol=1)
+dev.off()

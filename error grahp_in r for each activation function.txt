@@ -1,0 +1,47 @@
+setwd("F:/term_06_phd/2TH_PAPER/fig9")
+#paper 2 
+RSdata<-read.csv("fig9 - Copy.csv")
+
+library(forecast)
+library(tsutils)
+library(tseries)
+library(ggplot2)
+require(gridExtra)
+library(dplyr)
+library(plotly)
+library(trend)
+library(stringr)
+library(tidyverse)
+library(viridis)
+library(patchwork)
+library(hrbrthemes)
+library(viridis)
+#library(fmsb)
+#library(colormap)
+
+mydata<-data.frame(
+  Errors=c(RSdata$Error),
+  values=c( RSdata$Value2),
+  Model=c(RSdata$Model) 
+)
+
+colours = c( "#A54657",  "#582630", "#F7EE7F",
+             "#4DAA57","#F1A66A")
+
+tiff(filename="fig7.tiff", width=1600, height=1600, res=300)
+
+ggplot() + geom_bar(aes(y = values, x = Model, fill = Errors), data = mydata,
+                    stat="identity")+
+  theme(legend.position="bottom", legend.direction="horizontal",
+        legend.title = element_blank()) +
+
+  labs(x="Activation function ", y="Errors (m^3/m^3)") +
+  theme(axis.line = element_line(size=1, colour = "black"),
+        panel.grid.major = element_line(colour = "#d3d3d3"), panel.grid.minor = element_blank(),
+        panel.border = element_blank(), panel.background = element_blank()) +
+  theme(plot.title = element_text(size = 14, family = "Tahoma", face = "bold"),
+        text=element_text(family="Tahoma"),
+        axis.text.x=element_text(colour="black", size = 10),
+        axis.text.y=element_text(colour="black", size = 10))
+
+dev.off()

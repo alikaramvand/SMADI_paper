@@ -1,0 +1,216 @@
+setwd("D:/New folder")
+library(dplyr)
+library(zoo)
+library(PortfolioAnalytics)
+library(rugarch)
+library(skimr)
+library(mice)#missing data
+library(ggplot2)
+library(VIM)#ploting the missing data 
+library(colorspace)#ploting the missing data 
+library(grid)#ploting the missing data 
+library(lattice)
+library(imputeTS)#impute in time series 
+library(neuralnet)
+x<-read.csv("paper2_smap_2021-2022.csv")
+x<-read.csv("SMAP_withgap.csv")
+RSdata<-read.csv("SMchek.csv")
+RSdata$SM<-((RSdata$SM)*(100*1.5))/1360
+boxplot(RSdata$SM)
+
+
+moisture05<-x[ , 2]
+mois10<-x[ , 11]
+mois20<-x[ , 12]
+mois30<-x[ , 13]
+mois50<-x[ , 14]
+tarikh<-x[ , 1]
+
+#change Date calss
+class(tarikh)
+tarikh<-as.Date(tarikh,format="%m/%d/%Y")         
+skim(tarikh)
+
+
+
+#remove outliers 
+boxplot(moisture05,mois10,mois20,mois30,mois50)
+mt05 <- moisture05[!moisture05 %in% boxplot.stats(moisture05)$out]
+boxplot(mois10)
+mt10 <- mois10[!mois10 %in% boxplot.stats(mois10)$out]
+boxplot(mois20)
+mt20 <- mois20[!mois20 %in% boxplot.stats(mois20)$out]
+boxplot(mois30)
+mt30 <- mois30[!mois30 %in% boxplot.stats(mois30)$out]
+boxplot(mois50)
+mt50 <- mois50[!mois50 %in% boxplot.stats(mois50)$out]
+boxplot(mt05,mt10,mt20,mt30,mt50)
+
+
+md05 <- tarikh[!moisture05 %in% boxplot.stats(moisture05)$out]
+md10 <- tarikh[!mois10 %in% boxplot.stats(mois10)$out]
+md20 <- tarikh[!mois20 %in% boxplot.stats(mois20)$out]
+md30 <- tarikh[!mois30 %in% boxplot.stats(mois30)$out]
+md50 <- tarikh[!mois50 %in% boxplot.stats(mois50)$out]
+#create new data frame 
+new.data <- data.frame(col1 = c(mt05),col2 = as.Date(c( md05 )),stringsAsFactors = FALSE)
+class(new.data$col1)
+
+ndmt10<-data.frame(col1=c(mt10),col2=as.Date(c(md10)),stringsAsFactors = FALSE)
+ndmt20<-data.frame(col1=c(mt20),col2=as.Date(c(md20)),stringsAsFactors = FALSE)
+ndmt30<-data.frame(col1=c(mt30),col2=as.Date(c(md30)),stringsAsFactors = FALSE)
+ndmt50<-data.frame(col1=c(mt50),col2=as.Date(c(md50)),stringsAsFactors = FALSE)
+
+#choose complete casses and do not choose  na  remove them
+z=new.data[complete.cases(new.data), ]
+z10=ndmt10[complete.cases(ndmt10), ]
+z20=ndmt20[complete.cases(ndmt20), ]
+z30=ndmt30[complete.cases(ndmt30), ]
+z50=ndmt50[complete.cases(ndmt50), ]
+#check
+class(z$col1)
+sum(is.na(z))
+#z$col1=as.Date(z$col1)
+ 
+#x05=xts (z$col2 ,order.by=(z$col1) )
+#x10=xts (z10$col2 ,order.by=(z10$col1) )
+#x05=xts (z$col2 ,order.by=(z20$col1) )
+#x05=xts (z$col2 ,order.by=(z30$col1) )
+#x05=xts (z$col2 ,order.by=(z50$col1) )
+
+
+#plot(x05)
+
+#make a sery to plot time sery named full
+start = as.Date("2018/01/01")
+endo=as.Date("2021/01/01")
+full <- seq(start, by='1 day', to=endo)
+plot(full)
+length(full)
+
+newseqence <- data.frame(date=z$col2,value=as.numeric( z$col1)  )
+newseqence10 <- data.frame(date=z10$col2,value=as.numeric( z10$col1)  )
+newseqence20 <- data.frame(date=z20$col2,value=as.numeric( z20$col1)  )
+newseqence30 <- data.frame(date=z30$col2,value=as.numeric( z30$col1)  )
+newseqence50 <- data.frame(date=z50$col2,value=as.numeric( z50$col1)  )
+
+
+
+
+withgap<-data.frame(Date=full, value=with(newseqence, value[match(full, z$col2)]))
+withgap10<-data.frame(Date=full, value=with(newseqence10, value[match(full, z10$col2)]))
+withgap20<-data.frame(Date=full, value=with(newseqence20, value[match(full, z20$col2)]))
+withgap30<-data.frame(Date=full, value=with(newseqence30, value[match(full, z30$col2)]))
+withgap50<-data.frame(Date=full, value=with(newseqence50, value[match(full, z50$col2)]))
+
+
+
+#-------------------
+plot(withgap$value~withgap$Date)
+plot(withgap10$value~withgap10$Date)
+
+
+
+#withgap$value=as.list(withgap$value)
+#withgap$value[which(is.na(withgap$value))   ] #what is calculated 
+
+
+marginplot(withgap10[c(1,2)], col = c("blue", "red"),numbers = TRUE,main = "Missing SM illustration",xlab = "from 2014 ....to 2021",ylab =  "Field_SM 0-10 cm ")
+marginplot(withgap20[c(1,2)], col = c("blue", "red"))
+pbox(withgap, pos = 2)
+
+
+#withgap$value[which(is.na(withgap$value))]=mean(withgap$value,na.rm = TRUE)
+#plot(withgap)
+#----------------------------------
+df05 <-withgap %>% filter(!is.na(withgap$value)) #or on the contrary
+df10 <-withgap %>% filter(!is.na(withgap10$value))
+df20 <-withgap %>% filter(!is.na(withgap20$value))
+df30 <-withgap %>% filter(!is.na(withgap30$value))
+df50 <-withgap %>% filter(!is.na(withgap50$value))
+#df2<-withgap$value[which(is.na(withgap$value))   ]
+
+fit <- lm( withgap$value~withgap$Date, data = df05)
+fit10 <- lm( withgap10$value~withgap10$Date, data = df10)
+fit20 <- lm( withgap20$value~withgap20$Date, data = df20)
+fit30 <- lm( withgap30$value~withgap30$Date, data = df30)
+fit50 <- lm( withgap50$value~withgap50$Date, data = df50)
+
+
+summary(fit10)
+
+#fit <- lm(withgap$value~poly(as.numeric(withgap$Date)  ,20,raw=TRUE))
+
+#generate range of 50 numbers starting from 30 and ending at 160
+
+#plot(withgap$Date,withgap$value,pch=10,ylim=c(0,50))
+#lines(full, predict(fit, data.frame(x=full)), col="red")
+#------------------------------
+
+new<-na_kalman(withgap$value,smooth = TRUE)
+#newfalse<-na_kalman(withgap$value,smooth = TRUE,model = "StructTS")
+
+new10<-na_kalman(withgap10$value,smooth = TRUE)
+new20<-na_kalman(withgap20$value,smooth = TRUE)
+new30<-na_kalman(withgap30$value,smooth = TRUE)
+new50<-na_kalman(withgap50$value,smooth = TRUE)
+
+marginplot(nogap10[c(1,2)], col = c("blue", "red"),numbers = TRUE,main = "All Field SM 0-10 Cm",xlab = "from 2014 ....to 2021",ylab =  "Field_SM 0-10 cm ")
+#par(mfrow=c(2,1))
+#plot( new~full)
+#plot( newfalse~full)
+
+#------------------------------------------------------------
+#library(forecast)
+#library(nnfor)
+#nn=elm(x05, hd = 5, type = c( "ridge"
+#), reps = 8, comb = c("mean"),
+#lags = NULL, keep = NULL, difforder = NULL, outplot = c(
+ # TRUE), sel.lag = c(FALSE), direct = c( FALSE),
+#allow.det.season = c( FALSE), det.type = c("auto"
+#), xreg = NULL, xreg.lags = NULL, xreg.keep = NULL,
+#barebone = c( TRUE), model = NULL, retrain = c(FALSE))
+#nnfill=forecast(nn,h=1375)
+#vector<-as.vector(withgap$value) 
+#nnfill2=na_replace(vector,fill =forecast(nn,h=1375))  
+#plot(nnfill)
+
+#skim(vector)
+#------------------------------------------------------------
+
+#---------------------
+nogap<-data.frame(Date=full, value=new)
+nogap10<-data.frame(Date=full, value=new10)
+nogap20<-data.frame(Date=full, value=new20)
+nogap30<-data.frame(Date=full, value=new30)
+nogap50<-data.frame(Date=full, value=new50)
+
+par(mfrow=c(2,2))
+plot(nogap,type="l",xlab("10  Year "),ylab("%Soil Moisture 05"))
+plot(nogap10,type="p",xlab("10  Year "),ylab("%Soil Moisture 10cm"))
+plot(nogap20,type="p",xlab("10  Year "),ylab("%Soil Moisture 20cm"))
+plot(nogap30,type="p",xlab("10  Year "),ylab("%Soil Moisture 30cm"))
+
+
+plot(nogap50,type="p",xlab("10  Year "),ylab("%Soil Moisture 50cm"))
+plot(nogap)
+plot(nogap10)
+#---------------output writing 
+#allnogaps<-data.frame(nogap,nogap10,nogap20,nogap30,nogap50)
+
+
+#write.csv(allnogaps,"C:/Users/asus/Desktop/New folder/allnogaps.csv" ,row.names = FALSE)
+#---------------------
+#plots for estimates of the autocovariance or autocorrelation function Function
+#pacf is the function used for the partial autocorrelations
+new<-ts(new)
+pcf(new,type = c("correlation"))
+pacf(new)
+acf(nogap$value,type = c("covariance"))
+acf(nogap$value,type = c("partial"))
+ccf(nogap$Date,nogap$value,type = c("correlation"))
+
+summary(moisture05<-x[ , 10])
+write.csv(nogap,"D:/New folder/SMAP_SUSM_NOgap.csv", row.names = FALSE)
+
+

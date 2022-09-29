@@ -1,0 +1,193 @@
+setwd("F:/term_06_phd/2TH_PAPER/R-Validation of models")
+#paper 2 
+
+gldas_validation<-read.csv("paper2_validation_gldas2021-2022.csv")
+
+smap_m1<-gldas_validation$SMAP_method.1
+smap_m2<-gldas_validation$SMAP_method.2  
+
+s1<-0.014*(gldas_validation$s1)
+g1<-0.01*(gldas_validation$g1)
+  
+#method 1
+gldas_m1<-gldas_validation$gldas.m1
+gldas_m1<-1.02*gldas_m1
+
+#gldas_m2<-gldas_validation$gldas_method.2
+#gldas_m2<-1.02*gldas_m2
+
+#method 2
+#gldas_validation<-gldas_validation$gldas_method.2
+
+library(forecast)
+library(tsutils)
+library(tseries)
+library(ggplot2)
+require(gridExtra)
+library(ggplot2)
+library(dplyr)
+library(plotly)
+library(trend)
+require(neuralnet)
+library(neuralnet)
+library(forecast)
+library(nnfor)
+
+load(file = "D:/New folder/Papertwobestarima1.rda")
+#fit.arima.aic
+load(file = "D:/New folder/my_forecast_arima.rda")
+load(file = "D:/New folder/oneyeararima2.rda")
+load(file = "D:/New folder/nn3_Elm2_200hd_24rep.rda")
+ELM.model<-ELM.model4
+
+ELM.forecast=forecast(ELM.model4, h = 2*365)
+ELM.forecast<-ELM.forecast
+
+ff<-arima.oneyear[["mean"]]
+ffnormal<-((ff[1:365]-0)/(25.39-0))
+ff4<-ELM.forecast[["mean"]]
+ff4normal<-((ff4[1:365]-0)/(25.39-0))
+ff00elm<-0.014*(ELM.forecast[["mean"]])
+ff00elm2022<-0.014*(ELM.forecast[["mean"]])
+ff00elm2022<-ff00elm2022[366:730]
+ff00arima<-0.014*(arima.oneyear[["mean"]])
+
+inds2 <- seq(as.Date("2021-01-01"), as.Date("2022-01-01"), by = "day")
+inds3 <- seq(as.Date("2022-01-01"), as.Date("2023-01-01"), by = "day")
+
+df4 = data.frame(Time=inds2[1:365],
+                 Time3=inds3[1:365],
+                 smelm=ff00elm[1:365],
+                 smelm2022=ff00elm2022,
+                 #smarima=ff00arima,
+                 s1=s1,
+                 g1=g1
+                 )
+#---------------sm_normal_arima-------------
+#a1<-ggplot( data=df4, aes(x=Time, y=smarima))+
+  
+ # geom_line( aes(colour="Forecasted SM") ) +
+  #stat_smooth(span=1/12, 
+    #          show.legend = TRUE, 
+      #        aes(colour="Smooth trend"))+  
+ # scale_colour_manual(name="legend", values=c( "blue","red"))+
+  #xlab('Time(day)')+
+  
+  #ylab('Forecasted SM from ARIMA (m^3/m^3)')+
+  #ggtitle("(a)") +
+  #theme(plot.title = element_text(hjust = 0.5))
+
+
+#---------------sm_normal_elm-------------
+a4<-ggplot( data=df4, aes(x=Time3, y=smelm2022)  )+
+  
+  geom_line( aes(colour="ELM SM") ) +
+  
+  geom_smooth(span=1/12, 
+              show.legend = TRUE, 
+              aes(colour="Smooth trend"))+ 
+  scale_colour_manual(name="legend", values=c( "blue","red"))+
+  xlab('( زمان  ( روز')+
+  ylab('پیش بینی رطوبت خاک سطحی    \n 
+       (m^3/m^3)')+
+  ggtitle("(ج)") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+#---------------gldas-------------
+#gldas<-ggplot( data=df4, aes(x=Time, y=g1)  )+
+  
+  #geom_line( aes(colour="real SM") ) +
+  #geom_smooth(span=1/12, 
+              #show.legend = TRUE, 
+              #aes(colour="Smooth trend"))+ 
+  #scale_colour_manual(name="legend", values=c( "blue","red"))+
+  #xlab('Time(day)')+
+  #ylab('soil moisture from Gldas(m^3/m^3) ')+
+  #ggtitle("(a)") +
+  #theme(plot.title = element_text(hjust = 0.5))
+
+#---------------Tafazol-------------
+
+#T_A<-ggplot( data=df4,aes(x=Time,y=s1-smarima))+
+ # scale_x_date(date_breaks = "1 month", date_labels = "%m-%Y")+
+  #geom_line(col=4)+
+ # xlab('Time(day)')+
+  #ylab('  Residual of forecasted \n 
+  #  ARIMA and real SMAP\n 
+    #   SSM(m^3/m^3) ')+
+ # ggtitle("(b)") +
+ # geom_hline(yintercept = 0, color = "black",lwd=(1))+
+ # theme(plot.title = element_text(hjust = 0.5)
+    #    ,axis.text.x=element_text(angle=90, hjust=1))
+
+
+T_B<-ggplot( data=df4,aes(x=Time,y=s1-smelm))+
+  scale_x_date(date_breaks = "1 month", date_labels = "%m-%Y")+
+  geom_line(col=4)+
+  xlab('( زمان  ( روز')+
+  ylab(' باقیمانده تفاضل پیشبینی و مقدار واقعی \n  
+    ELM and real SMAP \n 
+       SSM(m^3/m^3) ')+
+  ggtitle("(ب)") +
+  geom_hline(yintercept = 0, color = "black",lwd=(1))+
+  theme(plot.title = element_text(hjust = 0.5)
+        ,axis.text.x=element_text(angle=90, hjust=1))
+
+
+
+#--------------- on each other --------
+VA<-ggplot( data=df4, aes(x=Time, y=g1)  )+
+ scale_x_date(date_breaks = "1 month", date_labels = "%m-%Y")+
+  
+  #geom_smooth(span=1/10, se = FALSE, 
+       #show.legend = TRUE, 
+       # aes(colour="GLDAS"))+
+  #geom_smooth(span=1/50, 
+             # show.legend = TRUE,level = 0.99 , 
+              #aes(y = smarima,colour="ARIMA"))+
+   
+  geom_smooth(span=1/20, 
+              show.legend = TRUE,level = 0.99 ,
+              aes(y = smelm,colour="ELM"))+
+  geom_smooth(span=1/50, 
+              show.legend = TRUE, 
+              aes(y =s1,colour="SMAP"), se = FALSE)+
+
+  scale_colour_manual(name="Legend:  ", values=c( "blue","red","black","darkorchid3"))+
+  xlab('( زمان  ( روز')+
+  ylab('رطوبت خاک سطحی \
+       (m^3/m^3) ')+
+ ggtitle("(الف)") +
+  theme(plot.title = element_text(hjust = 0.5)
+        ,axis.text.x=element_text(angle=90, hjust=1))
+
+
+
+#-------------------print -------------------------
+library(lattice)
+library(gridExtra)
+library(grid)
+t <- textGrob("Validation Of Models based on SMAP")
+
+#------------------plot------------
+tiff('Fig11.tiff', width=3800, height=2100, res=400)
+#grid.arrange(T_B,VA,
+           #   widths = c(2, 1, 1),
+             # layout_matrix = rbind(c(3, 3, 3),
+                                #    c(1, 2, 2)
+                                   # ))
+grid.arrange(VA,T_B,a4,ncol=1)
+
+dev.off()
+
+
+RMSE_arima<-sqrt(mean((df4$s1 - df4$smarima)^2))
+RMSE_smap<-sqrt(mean((df4$s1 - df4$smelm)^2))
+
+
+
+
+library(grid)
+grid.arrange(a1,a4,gldas,p,tafasol,ncol=2)
+

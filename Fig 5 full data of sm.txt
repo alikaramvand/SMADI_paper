@@ -1,0 +1,67 @@
+setwd("F:/term_06_phd/2TH_PAPER/fig5")
+#paper 2 
+RSdata<-read.csv("SMAP_SSM_NEW_FULL.csv")
+
+library(forecast)
+library(tsutils)
+library(tseries)
+library(ggplot2)
+require(gridExtra)
+library(dplyr)
+library(plotly)
+library(trend)
+
+#acf(RSdata$value,type = "correlation",lag.max=10)
+
+
+inds <- seq(as.Date("2016-01-01"), as.Date("2021-01-01"), by = "day")
+
+
+mydata<-data.frame(s1=0.014*RSdata$value
+                   ,inds=inds)
+mydata2<-data.frame(s1=0.014*RSdata$value[1:365],
+                    s2=0.014*RSdata$value[366:730],
+                    s3=0.014*RSdata$value[731:1095],
+                    s4=0.014*RSdata$value[1096:1460],
+                    s5=0.014*RSdata$value[1461:1825],
+                    inds=inds[1:365])
+
+rr1<-ggplot(mydata, aes(x=inds, y=s1))+
+  geom_line(lwd=1.2)+
+  scale_x_date(date_labels ="%b-%y" ,date_breaks = "2 month")+
+  labs(
+    title = "(??????)",
+    #subtitle = "(2020-2021)",
+    #caption = "Data from GEE the 2020-2021 GLDAS2.1 Total precipitation rate",
+    #tag = "2-C",
+    x = "????????  ???? ?????? ??????",
+    y = " ?????????? ?????? ???????? \n  
+     (m3/m3)",
+    colour = "Gears"
+  )+
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x=element_text(angle=90, hjust=1)) 
+#------------------------------------
+rr2<-ggplot(mydata2, aes(x=inds))+
+  geom_line(lwd=0.8,aes(y=s1,colour="2016"))+
+  geom_line(lwd=0.8,aes(y=s2,colour="2017"))+
+  geom_line(lwd=0.8,aes(y=s3,colour="2018"))+
+  geom_line(lwd=0.8,aes(y=s4,colour="2019"))+
+  geom_line(aes(y=s5,colour="2020"))+
+  scale_x_date(date_labels ="%b-%y" ,date_breaks = "2 month")+
+  labs(
+    title = "(??)",
+    #subtitle = "(2020-2021)",
+    #caption = "Data from GEE the 2020-2021 GLDAS2.1 Total precipitation rate",
+    #tag = "2-C",
+    x = "????????  ???? ?????? ?????? ",
+    y = " ?????????? ?????? ???????? \n  
+     (m3/m3)",
+    colour = "Legend"
+  )+
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x=element_text(angle=90, hjust=1)) 
+#------------------------------------
+tiff(filename="fig5.tiff", width=2800, height=1600, res=300)
+grid.arrange(rr1,rr2,ncol=1)
+dev.off()
+
+
